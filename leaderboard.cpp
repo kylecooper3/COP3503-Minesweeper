@@ -60,11 +60,8 @@ public:
 
     void writeToFile(string name, int time) {
         string filename = "files/leaderboard.txt";
+        // A missing file just means no scores yet; it gets created below.
         ifstream fileIn(filename);
-        if (!fileIn.is_open()) {
-            cout << "Failed to open file " << filename << endl;
-            return;
-        }
 
         vector<pair<int, string>> scores;
         string line;

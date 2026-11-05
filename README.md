@@ -44,28 +44,9 @@ cmake --build build
 
 ## Game files
 
-The images, font, and config are not included in this repo, so the game needs a `files/` folder in the repo root:
+The `files/` folder holds the images, font, and board config from the class project. To change the board size or mine count, edit `files/board_config.cfg`, which lists the width, height, and mine count, one per line.
 
-```text
-files/
-├── board_config.cfg    # width, height, and mine count, one per line
-├── font.ttf
-├── leaderboard.txt     # must exist; can start empty
-└── images/
-    ├── debug.png
-    ├── digits.png      # 0-9 and a minus sign, each 21x32, in one 231x32 strip
-    ├── face_happy.png
-    ├── face_lose.png
-    ├── face_win.png
-    ├── flag.png
-    ├── leaderboard.png
-    ├── mine.png
-    ├── number_1.png … number_8.png
-    ├── pause.png
-    ├── play.png
-    ├── tile_hidden.png
-    └── tile_revealed.png
-```
+Scores are saved to `files/leaderboard.txt`, which is created after your first win and is not tracked by git.
 
 ## Running
 
