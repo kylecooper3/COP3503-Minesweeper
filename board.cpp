@@ -3,28 +3,30 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <cstdlib>
 #include "cell.cpp"
 
 using namespace std;
 
 class Board{
 public:
-    int width;
-    int height;
-    int numMines;
+    int width = 0;
+    int height = 0;
+    int numMines = 0;
     vector<Cell> cells;
     vector<int> minePlacement;
     
     //functions//
     
-    void readCFG(){
+    // Returns false if the config is missing, unreadable, or has values the game can't use.
+    bool readCFG(){
         ifstream infile("files/board_config.cfg");
-        if(infile.is_open()){
-            infile >> width >> height >> numMines;
-        }else{
-            cout << "file not opened" << endl;
+        if(!(infile >> width >> height >> numMines)){
+            return false;
         }
-
+        // The mine counter shows three digits, and at least one tile must be mine-free.
+        long long totalCells = static_cast<long long>(width) * height;
+        return width > 0 && height > 0 && numMines > 0 && numMines <= 999 && numMines < totalCells;
     }
 
     void fillBoard(){

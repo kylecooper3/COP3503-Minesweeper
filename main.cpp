@@ -5,6 +5,8 @@
 #include <vector>
 #include <cctype>
 #include <chrono>
+#include <cstdlib>
+#include <ctime>
 #include "cell.cpp"
 #include "board.cpp"
 #include "sprites.cpp"
@@ -173,6 +175,8 @@ void drawMinesRemaining(int numMines, int flagsPlaced, int height,  vector<sf::S
 
 void drawClock(int elapsedSeconds, int height, int width, vector<sf::Sprite> minesRemainingVectorSprites, vector<Counter> &counterDisplayVector){
     counterDisplayVector.clear();
+    // The clock has two minute digits, so it stops at 99:59.
+    elapsedSeconds = min(elapsedSeconds, 99 * 60 + 59);
     int minutes = elapsedSeconds / 60;
     elapsedSeconds -= minutes * 60;
     int elapsedSeconds1 = elapsedSeconds / 10;
@@ -196,14 +200,20 @@ void drawClock(int elapsedSeconds, int height, int width, vector<sf::Sprite> min
 
 int main()
 {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
     Board testboard;
-    testboard.readCFG();
+    if(!testboard.readCFG()){
+        cerr << "Could not load a valid files/board_config.cfg. Start the game from the repo root and check the config values." << endl;
+        return 1;
+    }
     testboard.fillBoard();
     int windowWidth = testboard.width * 32;
     int windowHeight = (testboard.height * 32) + 100;
 
     //Creation of Images//
     sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Welcome window", sf::Style::Close | sf::Style::Titlebar);
+    window.setFramerateLimit(60);
     sf::RectangleShape backgroundShape(sf::Vector2f(windowWidth, windowHeight));
     backgroundShape.setFillColor(sf::Color::Blue);
 
@@ -278,7 +288,7 @@ int main()
             }
             else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter && !playerInput.isEmpty()){
                 enterPressed = true;
-                fullPlayerInput = playerInput + "*";
+                fullPlayerInput = playerInput;
                 window.close();
             }
         }
@@ -294,6 +304,7 @@ int main()
     }
     //Board window//
     sf::RenderWindow boardWindow(sf::VideoMode(windowWidth, windowHeight), "Minesweeper", sf::Style::Close | sf::Style::Titlebar);
+    boardWindow.setFramerateLimit(60);
     sf::RectangleShape boardBackground(sf::Vector2f(windowWidth, windowHeight));
     boardBackground.setFillColor(sf::Color(128, 128, 128));
     sf::RectangleShape bottomWhite(sf::Vector2f(windowWidth, 100));
@@ -351,6 +362,8 @@ int main()
     int cellsWithoutMines = 0;
     int finishedTime = 0;
     bool leaderBoardOpen = false;
+    bool resumeAfterLeaderboard = true;
+    bool scoreSaved = false;
     cellsWithoutMines = testboard.cells.size() - testboard.numMines;
     //Win Face//
     sf::Texture winFaceTexture;
@@ -626,6 +639,7 @@ int main()
                     startTime = Clock::now();
                     lostGame = false;
                     gameWon = false;
+                    scoreSaved = false;
                     correctlyPlacedFlags = 0;
                     flagsPlaced = 0;
                     removeFlags(flagVector);
@@ -663,14 +677,11 @@ int main()
                 }
                 //PAUSE BUTTON//
                 sf::FloatRect pauseButtonBounds = pauseSprite.getGlobalBounds();
-                if(pauseButtonBounds.contains(mousePos.x, mousePos.y) && !gameWon){
+                if(pauseButtonBounds.contains(mousePos.x, mousePos.y) && !gameWon && !lostGame){
                     if(gamePaused){
                         auto pauseDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - pauseTime);
                         startTime += pauseDuration;
                         gamePaused = false;
-                        for(int i; i < pauseTileRevealedVector.size(); i++){
-                            pauseTileRevealedVector[i].draw = false;
-                        }
                         pauseTileRevealedVector.clear();
 
                     }
@@ -692,15 +703,21 @@ int main()
                 //LEADERBOARD BUTTON//
                 sf::FloatRect leaderboardButtonBounds = leaderboardSprite.getGlobalBounds();
                 if(leaderboardButtonBounds.contains(mousePos.x, mousePos.y)){
+                    // Only a running game resumes when the leaderboard closes.
+                    resumeAfterLeaderboard = !gamePaused;
+                    if(!gamePaused){
+                        pauseTime = Clock::now();
+                    }
                     gamePaused = true;
                     leaderBoardOpen = true;
-                    pauseTime = Clock::now();
-                    for(int i=0; i < testboard.height; i++) {
-                        for(int j=0; j < testboard.width; j++) {
-                            TileRevealed tileRevealed(tileRevealedSprite, j * 32, i * 32);
-                            tileRevealed.reposition();
-                            tileRevealed.draw = true;
-                            pauseTileRevealedVector.push_back(tileRevealed);
+                    if(pauseTileRevealedVector.empty()){
+                        for(int i=0; i < testboard.height; i++) {
+                            for(int j=0; j < testboard.width; j++) {
+                                TileRevealed tileRevealed(tileRevealedSprite, j * 32, i * 32);
+                                tileRevealed.reposition();
+                                tileRevealed.draw = true;
+                                pauseTileRevealedVector.push_back(tileRevealed);
+                            }
                         }
                     }
                 }
@@ -856,12 +873,14 @@ int main()
 
         if(leaderBoardOpen){
             sf::RenderWindow leaderboardWindow(sf::VideoMode(windowWidth/2, windowHeight/2), "Leaderboard", sf::Style::Close | sf::Style::Titlebar);
+            leaderboardWindow.setFramerateLimit(60);
             sf::RectangleShape leaderboardBackground(sf::Vector2f(windowWidth/2, windowHeight/2));
             leaderboardBackground.setFillColor(sf::Color::Blue);
             Leaderboard leaderboard;
             leaderboard.readFile();
-            if(gameWon){
+            if(gameWon && !scoreSaved){
                 leaderboard.writeToFile(fullPlayerInput, elapsedTimeInt);
+                scoreSaved = true;
             }
             sf::Text leaderboardText;
             leaderboardText.setFont(font);
@@ -879,18 +898,24 @@ int main()
             centerText(leaderboardHeaderText);
             leaderboardHeaderText.setPosition(windowWidth/4.0f, windowHeight/8.0f-50);
             while(leaderboardWindow.isOpen()){
+                // Keep the board window responsive, ignoring its input until the leaderboard closes.
+                sf::Event ignoredEvent;
+                while(boardWindow.pollEvent(ignoredEvent)){}
                 sf::Event myEvent;
                 while(leaderboardWindow.pollEvent(myEvent)){
                     if(myEvent.type == sf::Event::Closed){
                         leaderboardWindow.close();
                         leaderBoardOpen = false;
-                        gamePaused = false;
-                        auto pauseDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - pauseTime);
-                        startTime += pauseDuration;
-                        for(int i; i < pauseTileRevealedVector.size(); i++){
-                            pauseTileRevealedVector[i].draw = false;
+                        if(resumeAfterLeaderboard){
+                            gamePaused = false;
+                            auto pauseDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - pauseTime);
+                            startTime += pauseDuration;
                         }
-                        pauseTileRevealedVector.clear();
+                        // A manual pause keeps the board covered; a finished game shows it again.
+                        if(!gamePaused || lostGame){
+                            pauseTileRevealedVector.clear();
+                        }
+                        resumeAfterLeaderboard = true;
                     }
                 }
                 leaderboardWindow.draw(leaderboardBackground);
