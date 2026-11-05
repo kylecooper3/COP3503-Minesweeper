@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <exception>
 using namespace std;
 
 class Leaderboard {
@@ -13,6 +14,22 @@ public:
     vector<string> names;
     vector<int> times;
     string entireString;
+
+    // Converts "MM:SS" to seconds. Returns false if the text isn't a valid time.
+    bool parseTime(const string& timeStr, int& totalSeconds) {
+        size_t colonPos = timeStr.find(":");
+        if (colonPos == string::npos) {
+            return false;
+        }
+        try {
+            int minutes = stoi(timeStr.substr(0, colonPos));
+            int seconds = stoi(timeStr.substr(colonPos + 1));
+            totalSeconds = minutes * 60 + seconds;
+        } catch (const exception&) {
+            return false;
+        }
+        return true;
+    }
 
     void readFile() {
         names.clear();
@@ -30,17 +47,12 @@ public:
             istringstream ss(line);
             string time;
             string name;
-            if (getline(ss, time, ',') && getline(ss, name)) {
+            int totalSeconds;
+            if (getline(ss, time, ',') && getline(ss, name) && parseTime(time, totalSeconds)) {
                 names.push_back(name);
-                int colonPos = time.find(":");
-                if (colonPos != string::npos) {
-                    int minutes = stoi(time.substr(0, colonPos));
-                    int seconds = stoi(time.substr(colonPos + 1));
-                    int totalSeconds = minutes * 60 + seconds;
-                    times.push_back(totalSeconds);
-                }
+                times.push_back(totalSeconds);
+                count++;
             }
-            count++;
         }
         file.close();
 
@@ -67,15 +79,10 @@ public:
         string line;
         while (getline(fileIn, line)) {
             istringstream ss(line);
-            string timeStr, name;
-            if (getline(ss, timeStr, ',') && getline(ss, name)) {
-                int colonPos = timeStr.find(":");
-                if (colonPos != string::npos) {
-                    int minutes = stoi(timeStr.substr(0, colonPos));
-                    int seconds = stoi(timeStr.substr(colonPos + 1));
-                    int totalSeconds = minutes * 60 + seconds;
-                    scores.push_back({ totalSeconds, line });
-                }
+            string timeStr, savedName;
+            int totalSeconds;
+            if (getline(ss, timeStr, ',') && getline(ss, savedName) && parseTime(timeStr, totalSeconds)) {
+                scores.push_back({ totalSeconds, line });
             }
         }
         fileIn.close();
@@ -105,5 +112,14 @@ public:
 
         fileOut.close();
         readFile();
+
+        // Star the new score on screen only, so it isn't saved to the file.
+        for (int i = 0; i < times.size(); i++) {
+            if (times[i] == time && names[i] == name) {
+                names[i] += "*";
+                updateEntireString();
+                break;
+            }
+        }
     }
 };
