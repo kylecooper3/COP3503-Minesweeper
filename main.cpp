@@ -526,26 +526,26 @@ int main()
     minesRemainingSpriteVector.push_back(clock6Sprite);
     //NUMBER 7//
     sf::Texture clock7Texture;
-    clock7Texture.loadFromFile("files/images/digits.png", sf::IntRect(148, 0, 21, 32));
+    clock7Texture.loadFromFile("files/images/digits.png", sf::IntRect(147, 0, 21, 32));
     sf::Sprite clock7Sprite;
     clock7Sprite.setTexture(clock7Texture);
     minesRemainingSpriteVector.push_back(clock7Sprite);
     //NUMBER 8//
     sf::Texture clock8Texture;
-    clock8Texture.loadFromFile("files/images/digits.png", sf::IntRect(169, 0, 21, 32));
+    clock8Texture.loadFromFile("files/images/digits.png", sf::IntRect(168, 0, 21, 32));
     sf::Sprite clock8Sprite;
     clock8Sprite.setTexture(clock8Texture);
     minesRemainingSpriteVector.push_back(clock8Sprite);
     //NUMBER 9//
     sf::Texture clock9Texture;
-    clock9Texture.loadFromFile("files/images/digits.png", sf::IntRect(190, 0, 21, 32));
+    clock9Texture.loadFromFile("files/images/digits.png", sf::IntRect(189, 0, 21, 32));
     sf::Sprite clock9Sprite;
     clock9Sprite.setTexture(clock9Texture);
     minesRemainingSpriteVector.push_back(clock9Sprite);
 
     //DASH//
     sf::Texture clockDashTexture;
-    clockDashTexture.loadFromFile("files/images/digits.png", sf::IntRect(211, 0, 21, 32));
+    clockDashTexture.loadFromFile("files/images/digits.png", sf::IntRect(210, 0, 21, 32));
     sf::Sprite clockDashSprite;
     clockDashSprite.setTexture(clockDashTexture);
     minesRemainingSpriteVector.push_back(clockDashSprite);
