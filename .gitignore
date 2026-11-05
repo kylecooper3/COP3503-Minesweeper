@@ -1,5 +1,5 @@
-# Game assets and local scores (not distributed with this repo)
-files/
+# Local scores
+files/leaderboard.txt
 
 # Build output and IDE settings
 build/
