@@ -1,0 +1,7 @@
+# Game assets and local scores (not distributed with this repo)
+files/
+
+# Build output and IDE settings
+build/
+cmake-build-*/
+.idea/
